@@ -1,0 +1,134 @@
+"use client";
+
+import Link from "next/link";
+import type { Job } from "@/lib/api";
+
+function formatRs(value: number) {
+  return `₹${value.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export function PrintableQuote({
+  job,
+  workshopName,
+}: {
+  job: Job;
+  workshopName: string;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl bg-white p-8">
+      <div className="no-print mb-6 flex gap-3">
+        <button
+          onClick={() => window.print()}
+          className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+        >
+          Print quote
+        </button>
+        <Link
+          href={`/jobs/${job.id}`}
+          className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          Back to job
+        </Link>
+      </div>
+
+      <header className="border-b border-slate-200 pb-6">
+        <h1 className="text-2xl font-bold text-slate-900">{workshopName}</h1>
+        <p className="mt-1 text-sm text-slate-500">Job Costing Quote</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-slate-500">Component</p>
+            <p className="font-medium">{job.component_name}</p>
+          </div>
+          <div>
+            <p className="text-slate-500">Date</p>
+            <p className="font-medium">
+              {new Date(job.created_at).toLocaleDateString("en-IN")}
+            </p>
+          </div>
+          {job.customer_ref && (
+            <div>
+              <p className="text-slate-500">Customer ref</p>
+              <p className="font-medium">{job.customer_ref}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-slate-500">Status</p>
+            <p className="font-medium capitalize">{job.status}</p>
+          </div>
+        </div>
+      </header>
+
+      <section className="mt-6">
+        <h2 className="font-semibold text-slate-900">Material</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          {job.material_name} · {job.raw_shape_name} · Raw {job.raw_weight.toFixed(3)} kg ·
+          Finished {job.finished_weight.toFixed(3)} kg
+        </p>
+      </section>
+
+      <section className="mt-6">
+        <h2 className="font-semibold text-slate-900">Cost breakdown</h2>
+        <table className="mt-3 w-full text-sm">
+          <tbody className="divide-y divide-slate-100">
+            <tr>
+              <td className="py-2 text-slate-700">Raw material</td>
+              <td className="py-2 text-right tabular-nums">{formatRs(job.raw_material_cost)}</td>
+            </tr>
+            {job.operations.map((op) => (
+              <tr key={op.id}>
+                <td className="py-2 text-slate-700">
+                  {op.operation_name}
+                  <span className="block text-xs text-slate-400">
+                    {op.param_value} × ₹{op.rate_per_unit}
+                  </span>
+                </td>
+                <td className="py-2 text-right tabular-nums">{formatRs(op.cost)}</td>
+              </tr>
+            ))}
+            <tr>
+              <td className="py-2 font-medium text-slate-700">Total labour</td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {formatRs(job.total_labour_cost)}
+              </td>
+            </tr>
+            {job.plating_cost > 0 && (
+              <tr>
+                <td className="py-2 text-slate-700">Plating</td>
+                <td className="py-2 text-right tabular-nums">{formatRs(job.plating_cost)}</td>
+              </tr>
+            )}
+            <tr>
+              <td className="py-2 text-slate-700">Packing & forwarding</td>
+              <td className="py-2 text-right tabular-nums">{formatRs(job.packing_cost)}</td>
+            </tr>
+            <tr>
+              <td className="py-2 text-slate-700">Transport</td>
+              <td className="py-2 text-right tabular-nums">{formatRs(job.transport_cost)}</td>
+            </tr>
+            <tr>
+              <td className="py-2 font-medium text-slate-700">Running total</td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {formatRs(job.running_total)}
+              </td>
+            </tr>
+            <tr className="bg-blue-50">
+              <td className="py-3 pl-2 font-bold text-slate-900">
+                Final quoted rate ({job.margin_percent}% margin on material + labour)
+              </td>
+              <td className="py-3 pr-2 text-right text-lg font-bold tabular-nums text-slate-900">
+                ₹{job.final_rate.toLocaleString("en-IN")}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
+        Amounts are pre-tax. This quote was generated by Workshop Rate Calculator.
+      </footer>
+    </div>
+  );
+}
